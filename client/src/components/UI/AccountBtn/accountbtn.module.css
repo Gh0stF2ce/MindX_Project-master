@@ -1,0 +1,12 @@
+.account_button {
+	order: 9;
+	position: relative;
+	display: flex;
+	justify-content: space-between;
+	width: 30px;
+	height: 30px;
+	padding: 3px;
+	border-radius: 50px;
+	border: 1px solid black;
+	background-color: transparent;
+}

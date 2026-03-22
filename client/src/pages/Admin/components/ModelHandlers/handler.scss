@@ -1,0 +1,56 @@
+@import '@mindx/Mixins/mixins.scss';
+
+.handler-dark {
+  position: absolute;
+  z-index: 97;
+  background: rgba(0, 0, 0, 0.5);
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.handler-section {
+  position: absolute;
+  width: clamp(300px, 30vw, 600px);
+  height: 100%;
+  background: url("../../../../img/background-site.jpg") no-repeat;
+    background-size: cover;
+    background-position: center;
+    box-sizing: border-box;
+  border: 2px solid #ffa600;
+  display: flex;
+  z-index: 98;
+  right: 0;
+  flex-direction: column;
+  overflow: auto;
+
+  .btn-container {
+    display: flex;
+    justify-content: flex-end;
+    margin: 5px;
+    gap: 3px;
+    flex-direction: row;
+    font-size: clamp(10px, 3vw, 18px);
+
+    .btn {
+      color: white;
+      padding: 5px;
+			border-radius: 10px;
+
+      &:hover {
+				border-radius: 50px;
+				transition: all 0.5s ease 0s;
+				color: wheat;
+			}
+
+      &.success {
+        background-color: $green;
+      }
+
+      &.cancel {
+        background-color: $red;
+      }
+    }
+  }
+}

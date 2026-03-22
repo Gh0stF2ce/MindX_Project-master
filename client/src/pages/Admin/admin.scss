@@ -1,0 +1,22 @@
+.admin-section {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  max-width: 1400px;
+  align-self: center;
+  background-color: rgba(255,255,255,0.4);
+  max-height: 86.3vh;
+  
+  .tabs {
+    width: 20%;
+    display: flex;
+    overflow-y: auto;
+  }
+  
+  .objects-list {
+    width: 80%;
+    border: 1px solid #F79361;
+    overflow-y: auto;
+  }
+}

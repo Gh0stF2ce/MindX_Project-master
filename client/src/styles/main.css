@@ -1,0 +1,40 @@
+@import './reset.css';
+@import './root.css';
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Poppins:wght@400;500;700&display=swap');
+
+html,
+body {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+	font-family: 'DM Sans', sans-serif;
+	letter-spacing: -0.5px;
+    background: url('./../img/background-site.jpg') no-repeat;
+    background-size: cover;
+    background-position: center;
+    box-sizing: border-box;
+}
+
+
+.App {
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	position: relative;
+}
+
+/* General */
+
+.container {
+	margin: 0 auto;
+	padding: 0;
+	max-width: 1200px;
+	width: 100%;
+	position: relative;
+}
+
+main {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+}

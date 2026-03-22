@@ -1,0 +1,127 @@
+.nav {
+	padding: 20px 0;
+	background-color: var(--nav-bg);
+	color: var(--nav-text);
+	letter-spacing: normal;
+	position: relative;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+	.nav-row {
+			display: flex;
+			justify-content: flex-end;
+			align-items: center;
+			column-gap: 30px;
+			row-gap: 20px;
+			flex-wrap: wrap;
+	}
+
+	.logo_left {
+			margin-right: auto;
+			transition: transform 0.3s ease;
+
+			&:hover {
+					transform: scale(1.05);
+			}
+	}
+
+	.logo_center {
+			position: absolute;
+			margin-left: auto;
+			margin-right: auto;
+			left: 0;
+			right: 0;
+			text-align: center;
+			width: 70px;
+			transition: transform 0.3s ease;
+
+			&:hover {
+					transform: scale(1.05);
+			}
+	}
+
+	.nav-list {
+			display: flex;
+			flex-wrap: wrap;
+			row-gap: 10px;
+			align-items: center;
+			column-gap: 30px;
+			font-size: 16px;
+			font-weight: 500;
+			font-family: 'Poppins', sans-serif;
+	}
+
+	.link-strong {
+			font-weight: 700;
+	}
+
+	.nav-list_link {
+			color: var(--nav-text);
+			transition: all 0.3s ease;
+			padding: 5px 10px;
+			border-radius: 20px;
+
+			&:hover {
+					background-color: rgba(var(--accent-rgb), 0.1);
+					color: var(--accent);
+					transform: translateY(-2px);
+			}
+	}
+
+	.nav-list_link-active {
+			position: relative;
+			color: var(--accent);
+			font-weight: 700;
+
+			&::before {
+					content: '';
+					position: absolute;
+					left: 0;
+					top: 100%;
+					display: block;
+					height: 2px;
+					width: 100%;
+					background-color: var(--accent);
+					transform: scaleX(1);
+					transition: transform 0.3s ease;
+			}
+
+			&:hover::before {
+					transform: scaleX(1.2);
+			}
+	}
+
+	.nav-list_item {
+			&.auth {
+					display: flex;
+					gap: 10px;
+			}
+
+			& .button {
+					background-color: var(--accent);
+					padding: 10px 20px;
+					border-radius: 25px;
+					color: white;
+					font-weight: 700;
+					transition: all 0.3s ease;
+					box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+					&:hover {
+							transform: translateY(-2px);
+							box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+							filter: brightness(90%);
+					}
+
+					&.unauthorize {
+							background-color: white !important;
+							font-weight: 500;
+							color: black;
+							border: 1px solid var(--accent);
+
+							&:hover {
+									background-color: var(--accent) !important;
+									color: white;
+							}
+					}
+			}
+	}
+}

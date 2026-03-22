@@ -1,0 +1,86 @@
+.auth-section {
+  position: relative;
+  width: 100%;
+  display: flex;
+  max-width: 1200px;
+  align-self: center;
+  background-color: rgba(255,200,172,0.4);
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+
+  .auth-form {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    gap: clamp(10px, 2vw, 20px);
+    width: 100%;
+  }
+
+  .auth-input {
+    padding: 10px;
+    border: 1px solid black;
+    width: 100%;
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: clamp(10px, 2vw, 20px);
+  }
+
+  label {
+    font-weight: 500;
+    margin-left: 5px;
+    font-size: clamp(10px, 2vw, 15px);
+  }
+
+  .auth-title {
+    font-size: clamp(18px, 3vw, 25px);
+    font-weight: 700;
+    margin: 10px;
+    margin-left: 30px !important;
+  }
+
+  .btn-section {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  .btn {
+    padding: 20px;
+    width: 50%;
+    border-radius: 15px;
+    text-align: center;
+    font-size: clamp(10px, 2vw, 20px);
+    font-weight: 500;
+
+    &:hover {
+			border-radius: 50px;
+      transition: all 0.5s ease 0s;
+			color: wheat;
+    }
+
+    &.auth {
+      background-color: var(--accent);
+      padding: 20px;
+      color: white;
+    }
+    &.sign {
+      border: 1px solid black;
+      color: black;
+    }
+  }
+
+  .signin-section, .signup-section{
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+    background-color: white;
+    border-radius: 20px;
+    border: 1px solid black;
+    min-width: 300px;
+  }
+
+  .signup-section {
+    
+  }
+}

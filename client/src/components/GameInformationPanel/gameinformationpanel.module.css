@@ -1,0 +1,32 @@
+.information_panel{
+    background-color: white;
+    width: 35%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    border-radius: 7px;
+    margin: 20px;
+    padding: 3px;
+}
+
+.time, .score{
+    width: 50%;
+    justify-content: center;
+    display: inline-flex;
+    flex-direction: column;
+}
+
+.score_string, .time_string{
+    font-size: clamp(6px, 1vw, 14px);
+    font-family: 'DM Sans', sans-serif;
+    text-align: center;
+    color: gray;
+}
+
+.score_int, .time_date{
+    font-size: clamp(8px, 1.2vw, 18px);
+    font-family: 'DM Sans', sans-serif;
+    text-align: center;
+    color: black;
+    font-weight: bold;
+}

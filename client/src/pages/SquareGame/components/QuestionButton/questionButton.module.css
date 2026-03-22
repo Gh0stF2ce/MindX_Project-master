@@ -1,0 +1,76 @@
+.question_button_wrapper {
+    border-radius: 20px 0 20px 0;
+    border: none;
+}
+
+.question_button {
+    position: relative;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: clamp(8px, 2vw, 24px);
+    text-decoration: none;
+    font-family: 'DM Sans', sans-serif;
+    background: #FF6400;
+    border-radius: 20px 0 20px 0;
+    display: flex;
+    border: 3px solid #FF6400;
+    aspect-ratio: 1/1;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.question_button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    background: #ff7b33;
+}
+
+.question_button:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Эффект "волны" при наведении */
+.question_button:after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s ease-out, height 0.3s ease-out;
+}
+
+.question_button:hover:after {
+    width: 200%;
+    height: 200%;
+}
+
+.question_button.green {
+    background: #2ef065;
+    border: 3px solid #2ef065;
+}
+
+.question_button.green:hover {
+    background: #4ff235;
+}
+
+.question_button.red {
+    background: #f73149;
+    border: 3px solid #f73149;
+}
+
+.question_button.red:hover {
+    background: #ed142e;
+}
+
+.icon {
+    vertical-align: middle;
+    margin-left: 2px;
+    stroke-width: 1.5;
+}

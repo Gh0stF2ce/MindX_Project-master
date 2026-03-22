@@ -1,0 +1,20 @@
+.title_home{
+    font-size: clamp(75px,10vw,150px);
+    font-weight: 500;
+}
+
+.description_home{
+    font-size: clamp(10px,2vw,25px);
+    border-bottom: 2px solid orange;
+    border-top: 2px solid orange;
+    font-weight: 500;
+}
+
+.section{
+    justify-content: center;
+    align-items: center;
+}
+
+.strong_X{
+    color:orange;
+}

@@ -1,0 +1,25 @@
+/* Footer */
+
+.footer {
+	margin-top: auto;
+	padding: 10px 0 10px;
+	background-color: var(--footer-bg);
+	color: var(--footer-text);
+}
+
+.footer_wrapper {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+	row-gap: 10px;
+}
+
+.social {
+	display: flex;
+	margin-left: 30px;
+	column-gap: 20px;
+}
+
+.copyright {
+	font-size: 16px;
+}

@@ -1,0 +1,317 @@
+.invaders-section {
+  min-height: calc(100vh - 180px);
+  padding: 32px 0 56px;
+
+  .invaders-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.9fr);
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  .invaders-hero,
+  .status-card,
+  .players-card,
+  .board-card,
+  .invaders-modal {
+    border-radius: 28px;
+    background:
+      radial-gradient(circle at top right, rgba(255, 184, 77, 0.2), transparent 24%),
+      linear-gradient(135deg, #102542 0%, #16365f 60%, #1e4f7c 100%);
+    color: #fff;
+    box-shadow: 0 18px 48px rgba(16, 37, 66, 0.24);
+  }
+
+  .invaders-hero,
+  .status-card,
+  .players-card,
+  .board-card {
+    padding: 28px;
+  }
+
+  .invaders-badge {
+    display: inline-block;
+    margin-bottom: 16px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  h1 {
+    margin-bottom: 16px;
+    font-size: clamp(32px, 5vw, 52px);
+    line-height: 1;
+  }
+
+  h2 {
+    margin-bottom: 18px;
+    font-size: 22px;
+  }
+
+  .invaders-description {
+    max-width: 720px;
+    margin-bottom: 24px;
+    font-size: 18px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  .invaders-meta {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .invaders-meta-item,
+  .status-line {
+    padding: 16px 18px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .invaders-meta-item span,
+  .status-line span,
+  .players-hint {
+    display: block;
+    color: rgba(255, 255, 255, 0.74);
+  }
+
+  .invaders-meta-item strong,
+  .status-line strong {
+    display: block;
+    margin-top: 8px;
+    font-size: 18px;
+  }
+
+  .invaders-sidebar {
+    display: grid;
+    gap: 24px;
+  }
+
+  .status-card,
+  .players-card {
+    display: grid;
+    gap: 14px;
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    padding: 14px 18px;
+    border: 0;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  .primary-btn:hover,
+  .secondary-btn:hover,
+  .board-cell:hover {
+    transform: translateY(-2px);
+  }
+
+  .primary-btn {
+    background: #ffb84d;
+    color: #102542;
+  }
+
+  .secondary-btn {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+  }
+
+  .winner-banner {
+    padding: 16px 18px;
+    border-radius: 18px;
+    background: rgba(122, 231, 143, 0.18);
+    color: #c9ffd3;
+    font-weight: 700;
+  }
+
+  .players-list {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .players-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .players-list li.active {
+    outline: 2px solid rgba(255, 184, 77, 0.85);
+  }
+
+  .players-list strong,
+  .player-stats span {
+    display: block;
+  }
+
+  .board-card {
+    overflow: hidden;
+  }
+
+  .board-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+
+  .board-header p {
+    color: rgba(255, 255, 255, 0.78);
+  }
+
+  .board-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .board-cell {
+    min-height: 116px;
+    padding: 14px;
+    border: 0;
+    border-radius: 22px;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .board-cell.current {
+    box-shadow: 0 0 0 3px rgba(255, 184, 77, 0.9);
+  }
+
+  .board-cell.owner-1 { background: rgba(255, 99, 132, 0.26); }
+  .board-cell.owner-2 { background: rgba(54, 162, 235, 0.28); }
+  .board-cell.owner-3 { background: rgba(75, 192, 122, 0.28); }
+  .board-cell.owner-4 { background: rgba(255, 206, 86, 0.28); }
+
+  .cell-position {
+    display: inline-block;
+    margin-bottom: 10px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+  }
+
+  .board-cell strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 18px;
+  }
+
+  .board-cell span:last-child {
+    color: rgba(255, 255, 255, 0.76);
+  }
+
+  .invaders-modal-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(5, 15, 27, 0.6);
+    z-index: 40;
+  }
+
+  .invaders-modal {
+    width: min(100%, 520px);
+    padding: 28px;
+  }
+
+  .task-text {
+    margin: 14px 0;
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .timer-badge {
+    display: inline-block;
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .invaders-modal input {
+    width: 100%;
+    margin-bottom: 16px;
+    padding: 14px 16px;
+    border: 0;
+    border-radius: 16px;
+    font-size: 18px;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+  }
+
+  .modal-actions.column {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 960px) {
+  .invaders-section {
+    .invaders-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .invaders-section {
+    padding: 20px 0 40px;
+
+    .invaders-hero,
+    .status-card,
+    .players-card,
+    .board-card,
+    .invaders-modal {
+      padding: 22px;
+      border-radius: 24px;
+    }
+
+    .invaders-meta {
+      grid-template-columns: 1fr;
+    }
+
+    .board-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .board-grid {
+      gap: 10px;
+    }
+
+    .board-cell {
+      min-height: 96px;
+      padding: 12px;
+      border-radius: 18px;
+    }
+
+    .modal-actions {
+      flex-direction: column;
+    }
+  }
+}

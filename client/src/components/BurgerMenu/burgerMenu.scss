@@ -1,0 +1,121 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Poppins:wght@400;500;700&display=swap');
+
+.burger-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    
+    &.active {
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+.burger-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100%;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.2);
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 20px 0;
+    z-index: 1001;
+    overflow-y: auto;
+    
+    .burger-overlay.active & {
+        transform: translateX(0);
+    }
+}
+
+.burger-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    transition: transform 0.2s;
+    
+    &:hover {
+        transform: rotate(90deg);
+    }
+}
+
+.burger-list {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin-top: 40px;
+    
+    &__item {
+        list-style: none;
+        margin: 5px 15px;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: transform 0.2s;
+        
+        &:hover {
+            transform: translateX(5px);
+        }
+        
+        a, &.logout {
+            display: block;
+            padding: 15px 20px;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+            font-size: 18px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        a {
+            &.active {
+                color: #00d1b2;
+                background: rgba(255, 255, 255, 0.05);
+            }
+        }
+        
+        &:not(:last-child) {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    }
+}
+
+.login {
+    background: linear-gradient(45deg, #00d1b2, #00b5a1);
+    margin-top: 20px !important;
+    border-radius: 8px;
+    
+    a {
+        color: white !important;
+        text-align: center;
+        font-weight: 700 !important;
+    }
+}
+
+.logout {
+    background: linear-gradient(45deg, #ff3860, #ff2b56);
+    margin-top: 20px !important;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 700 !important;
+    cursor: pointer;
+    
+    &:hover {
+        background: linear-gradient(45deg, #ff2b56, #ff1a4a);
+    }
+}
