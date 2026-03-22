@@ -9,6 +9,9 @@ import { API } from '@mindx/http/API.js'
 import { Context } from '@mindx/index.js';
 import moment from 'moment';
 import { Tooltip } from 'react-tooltip';
+import { getApiHost } from '@mindx/utils/apiHost';
+
+const apiHost = getApiHost();
 
 const MindxTable = (props) => {
 	const { user } = useContext(Context);
@@ -106,7 +109,7 @@ const MindxTable = (props) => {
           ? <Image
               width={150}
               height={150}
-              src={`${process.env.REACT_APP_HOST}/api/${value}.jpg`}
+              src={`${apiHost}/api/${value}.jpg`}
             />
           : <>{"-"}</>
       case 'datetime':
@@ -143,9 +146,16 @@ const MindxTable = (props) => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        {!settings?.off_CUD && (
-          <button onClick={createItem}>Создать объект</button>
-        )}
+        <div className='table-header-actions'>
+          {settings?.headerActions?.map((action) => (
+            <button key={action.label} className={action.className || ''} onClick={action.onClick}>
+              {action.label}
+            </button>
+          ))}
+          {!settings?.off_CUD && (
+            <button onClick={createItem}>Создать объект</button>
+          )}
+        </div>
       </div>
       
       <table className='objectlist-section'>

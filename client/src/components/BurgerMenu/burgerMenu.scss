@@ -119,3 +119,16 @@
         background: linear-gradient(45deg, #ff2b56, #ff1a4a);
     }
 }
+
+.logout-all {
+    background: linear-gradient(45deg, #ffb347, #ff944d);
+    margin-top: 20px !important;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 700 !important;
+    cursor: pointer;
+
+    &:hover {
+        background: linear-gradient(45deg, #ff944d, #ff7d2f);
+    }
+}

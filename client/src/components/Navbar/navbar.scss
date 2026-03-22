@@ -93,6 +93,13 @@
 	.nav-list_item {
 			&.auth {
 					display: flex;
+					align-items: center;
+			}
+
+			.auth-actions {
+					display: flex;
+					flex-wrap: nowrap;
+					align-items: center;
 					gap: 10px;
 			}
 
@@ -121,6 +128,12 @@
 									background-color: var(--accent) !important;
 									color: white;
 							}
+					}
+
+					&.secondary-action {
+							background-color: #fff3e8;
+							color: #9a4200;
+							border: 1px solid #f79361;
 					}
 			}
 	}

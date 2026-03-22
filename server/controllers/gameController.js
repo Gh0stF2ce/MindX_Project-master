@@ -8,6 +8,7 @@ const invadersDataController = require('./invadersDataController')
 const accessGameController = require('./accessGameController')
 const themeGameController = require('./themeGameController')
 const validateCheck = require('../validators/isNullValidator')
+const securityAuditService = require('../services/securityAuditService')
 
 class GameController {
     async create(req, res, next) {
@@ -16,9 +17,27 @@ class GameController {
             const gameData = await this.createPrivate(req, transaction)
 
             await transaction.commit();
+            await securityAuditService.log({
+                req,
+                userId: req.user?.id,
+                username: req.user?.username,
+                action: 'admin.game.create',
+                targetType: 'game',
+                targetId: gameData.id,
+                details: { typeGame: gameData.typeGame, name: gameData.name }
+            });
             res.json({ message: 'Игра добавлена', gameData })
         } catch (error) {
             await transaction.rollback();
+            await securityAuditService.log({
+                req,
+                userId: req.user?.id,
+                username: req.user?.username,
+                action: 'admin.game.create',
+                status: 'failure',
+                targetType: 'game',
+                details: { reason: error.message, name: req.body?.name, typeGame: req.body?.typeGame }
+            });
             return next(ApiError.badRequest(`Ошибка создания: ${error.message}`))
         }
     }
@@ -233,8 +252,26 @@ class GameController {
     async delete(req, res, next) {
         try {
             await this.deletePrivate(req)
+            await securityAuditService.log({
+                req,
+                userId: req.user?.id,
+                username: req.user?.username,
+                action: 'admin.game.delete',
+                targetType: 'game',
+                targetId: req.params?.id
+            });
             res.json({ message: 'Игра удалена' })
         } catch (error) {
+            await securityAuditService.log({
+                req,
+                userId: req.user?.id,
+                username: req.user?.username,
+                action: 'admin.game.delete',
+                status: 'failure',
+                targetType: 'game',
+                targetId: req.params?.id,
+                details: { reason: error.message }
+            });
             return next(ApiError.badRequest(`Ошибка удаления: ${error.message}`))
         }
     }
@@ -254,12 +291,32 @@ class GameController {
     async update(req, res, next) {
         const transaction = await sequelize.transaction();
         try {
+            const previousGameId = req.params?.id;
             await this.deletePrivate(req, transaction);
-            await this.createPrivate(req, transaction);
+            const gameData = await this.createPrivate(req, transaction);
             await transaction.commit();
+            await securityAuditService.log({
+                req,
+                userId: req.user?.id,
+                username: req.user?.username,
+                action: 'admin.game.update',
+                targetType: 'game',
+                targetId: previousGameId,
+                details: { recreatedGameId: gameData.id, name: gameData.name, typeGame: gameData.typeGame }
+            });
             res.json({ message: 'Игра обновлена' })
         } catch (error) {
             await transaction.rollback();
+            await securityAuditService.log({
+                req,
+                userId: req.user?.id,
+                username: req.user?.username,
+                action: 'admin.game.update',
+                status: 'failure',
+                targetType: 'game',
+                targetId: req.params?.id,
+                details: { reason: error.message }
+            });
             return next(ApiError.badRequest(`Ошибка обновления: ${error.message}`))
         }
     }

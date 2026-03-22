@@ -4,6 +4,8 @@ import { useContext } from 'react';
 import { Context } from '@mindx/index.js';
 import { observer } from 'mobx-react-lite';
 import { CloseOutlined } from '@ant-design/icons';
+import { API } from '@mindx/http/API';
+import { ErrorEmmiter, SuccessEmmiter } from '@mindx/components/UI/Toastify/Notify';
 
 const BurgerMenu = observer((props) => {
     const { user } = useContext(Context);
@@ -13,6 +15,16 @@ const BurgerMenu = observer((props) => {
         user.logout();
         localStorage.setItem('token', null);
         setIsActiveBurger(false);
+    };
+
+    const logoutAll = async () => {
+        try {
+            const response = await API.user.logoutAll();
+            SuccessEmmiter(response.message);
+            logout();
+        } catch (error) {
+            ErrorEmmiter(error?.response?.data?.error || 'Не удалось завершить все сессии.');
+        }
     };
 
     return (
@@ -56,9 +68,14 @@ const BurgerMenu = observer((props) => {
                     )}
 
                     {user.isAuth ? (
-                        <li className="burger-list__item logout" onClick={logout}>
-                            Выйти
-                        </li>
+                        <>
+                            <li className="burger-list__item logout-all" onClick={logoutAll}>
+                                Выйти на всех устройствах
+                            </li>
+                            <li className="burger-list__item logout" onClick={logout}>
+                                Выйти
+                            </li>
+                        </>
                     ) : (
                         <li className="burger-list__item login">
                             <NavLink to="/signin" onClick={() => setIsActiveBurger(false)}>

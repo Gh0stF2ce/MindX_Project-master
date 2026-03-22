@@ -51,6 +51,15 @@ const userPostSchema = Joi.object({
     "string.base": "Поле {#key} должно быть строкой.",
 });
 
+const signinSchema = Joi.object({
+    username: usernameValidation.required(),
+    password: Joi.string().required(),
+}).messages({
+    "any.required": "Поле {#key} обязательно для заполнения.",
+    "string.empty": "Поле {#key} не может быть пустым.",
+    "string.base": "Поле {#key} должно быть строкой.",
+});
+
 
 // Схемы для администратора
 const roleIdValidation = Joi.string()
@@ -95,4 +104,4 @@ const userPostSchemaForAdmin = Joi.object({
 });
 
 
-module.exports = { userPutSchema, userPostSchema, userPutSchemaForAdmin, userPostSchemaForAdmin };
+module.exports = { userPutSchema, userPostSchema, signinSchema, userPutSchemaForAdmin, userPostSchemaForAdmin };

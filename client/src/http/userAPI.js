@@ -32,6 +32,16 @@ const check = async () => {
     return jwtDecode(data.token);
 };
 
+const logoutAll = async () => {
+    const { data } = await $authHost.post(`/api/user/logout-all`);
+    return data;
+};
+
+const logoutAllUsers = async () => {
+    const { data } = await $authHost.post(`/api/admin/user/logout-all-sessions`);
+    return data;
+};
+
 const update = async (model) => {
     const { data } = await $authHost.put(`/api/admin/user/${model.id}`, model);
     return data;
@@ -54,6 +64,8 @@ export const userAPI = {
   SignIn,
   SignUp,
   check,
+  logoutAll,
+  logoutAllUsers,
   update,
   addItem,
   deleteById

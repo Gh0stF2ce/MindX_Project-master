@@ -12,6 +12,7 @@ const themeGameRouter = require('./themeGameRouter')
 const carouselDataRouter = require('./carouselDataRouter')
 const userAnswerRouter = require('./userAnswerRouter')
 const invadersDataRouter = require('./invadersDataRouter')
+const securityEventRouter = require('./securityEventRouter')
 
 router.use('/image', imageRouter)
 router.use('/question', questionRouter)
@@ -25,5 +26,6 @@ router.use('/themeGame', themeGameRouter)
 router.use('/carouselData', carouselDataRouter)
 router.use('/userAnswer', userAnswerRouter)
 router.use('/invadersData', invadersDataRouter)
+router.use('/securityEvent', securityEventRouter)
 
 module.exports = router

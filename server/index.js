@@ -6,7 +6,7 @@ const rateLimit = require('express-rate-limit')
 const helmet = require("helmet")
 const fileUpload = require('express-fileupload')
 const sequelize = require('./database.js')
-const { InvadersData } = require('./models')
+const { InvadersData, User } = require('./models')
 const errorHandler = require('./middlewares/ErrorHandlingMiddleware')
 const path = require('path')
 
@@ -45,6 +45,16 @@ const start = async () => {
         await sequelize.sync()
 
         const queryInterface = sequelize.getQueryInterface();
+        const userTable = User.getTableName();
+        const userColumns = await queryInterface.describeTable(userTable);
+        if (!userColumns.tokenVersion) {
+            await queryInterface.addColumn(userTable, 'tokenVersion', {
+                type: sequelize.Sequelize.INTEGER,
+                allowNull: false,
+                defaultValue: 0,
+            });
+        }
+
         const invadersTable = InvadersData.getTableName();
         const invadersColumns = await queryInterface.describeTable(invadersTable);
         if (!invadersColumns.schoolClass) {

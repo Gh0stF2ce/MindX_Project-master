@@ -5,6 +5,8 @@ import { useState, useEffect, useContext } from 'react';
 import BurgerButton from './../BurgerButton/BurgerButton';
 import { Context } from '../../index';
 import { observer } from 'mobx-react-lite';
+import { API } from '@mindx/http/API';
+import { ErrorEmmiter, SuccessEmmiter } from '@mindx/components/UI/Toastify/Notify';
 
 const Navbar = observer((props) => {
     const { user } = useContext(Context);
@@ -28,6 +30,16 @@ const Navbar = observer((props) => {
         user.logout();
         localStorage.setItem('token', null);
         window.location.reload();
+    };
+
+    const logoutAll = async () => {
+        try {
+            const response = await API.user.logoutAll();
+            SuccessEmmiter(response.message);
+            logout();
+        } catch (error) {
+            ErrorEmmiter(error?.response?.data?.error || 'Не удалось завершить все сессии.');
+        }
     };
 
     return (
@@ -79,12 +91,17 @@ const Navbar = observer((props) => {
                                     </li>
                                 ) : (
                                     <li className="nav-list_item auth">
-                                        <NavLink className="button authorize">
-                                            {user.user.username}
-                                        </NavLink>
-                                        <button className="button unauthorize" onClick={logout}>
-                                            Выйти
-                                        </button>
+                                        <div className="auth-actions">
+                                            <NavLink className="button authorize">
+                                                {user.user.username}
+                                            </NavLink>
+                                            <button className="button secondary-action" onClick={logoutAll}>
+                                                Выйти везде
+                                            </button>
+                                            <button className="button unauthorize" onClick={logout}>
+                                                Выйти
+                                            </button>
+                                        </div>
                                     </li>
                                 )}
                             </ul>

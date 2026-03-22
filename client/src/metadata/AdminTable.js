@@ -62,11 +62,31 @@ const imageTemplate = {
   ],
 };
 
+const securityEventTemplate = {
+	type: 'securityEvent',
+	label: 'Аудит',
+	api: API.securityEvent,
+	fileds: [
+		{ type: 'createdAt', label: 'Дата', meta: 'datetime' },
+		{ type: 'action', label: 'Событие', meta: 'string' },
+		{ type: 'status', label: 'Статус', meta: 'string' },
+		{ type: 'username', label: 'Пользователь', meta: 'string' },
+		{ type: 'targetType', label: 'Тип цели', meta: 'string' },
+		{ type: 'targetId', label: 'ID цели', meta: 'string' },
+		{ type: 'ipAddress', label: 'IP', meta: 'string' },
+		{ type: 'detailsText', label: 'Детали', meta: 'string' },
+	],
+	settings: {
+		off_CUD: true,
+	},
+};
+
 export const templates = {
 	question: questionTemplate,
 	game: gameTemplate,
 	theme: themeTemplate,
 	user: userTemplate,
+	securityEvent: securityEventTemplate,
 	role: roleTemplate,
 	image: imageTemplate,
 };

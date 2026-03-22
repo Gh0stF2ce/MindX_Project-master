@@ -15,6 +15,12 @@
     background-color: white;
     height: 40px;
   }
+  .table-header-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
   button {
     color: white;
     padding: 5px;
@@ -28,6 +34,10 @@
       border-radius: 50px;
       transition: all 0.5s ease 0s;
       color: wheat;
+    }
+
+    &.danger-action {
+      background-color: #ff5a5f;
     }
   }
 }
