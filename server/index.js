@@ -15,7 +15,8 @@ const PORT = process.env.PORT
 const corsOptions = {
     origin: ['https://playmindx.online'],
     methods: 'GET,POST,PUT,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type,Authorization'
+    allowedHeaders: 'Content-Type,Authorization',
+    credentials: true
 }
 
 const limiter = rateLimit({
@@ -30,7 +31,7 @@ if (process.env.MODE === 'PROD') {
     app.use(limiter);
     app.use(helmet());
 } else {
-    app.use(cors())
+    app.use(cors({ origin: true, credentials: true }))
 }
 app.use(express.json())
 app.use('/api', express.static(path.resolve(__dirname, 'static')))
@@ -47,6 +48,26 @@ const start = async () => {
         const queryInterface = sequelize.getQueryInterface();
         const userTable = User.getTableName();
         const userColumns = await queryInterface.describeTable(userTable);
+        if (!userColumns.email) {
+            await queryInterface.addColumn(userTable, 'email', {
+                type: sequelize.Sequelize.CITEXT,
+                allowNull: true,
+            });
+        }
+        if (!userColumns.isEmailVerified) {
+            await queryInterface.addColumn(userTable, 'isEmailVerified', {
+                type: sequelize.Sequelize.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            });
+        }
+        if (!userColumns.isTwoFactorEnabled) {
+            await queryInterface.addColumn(userTable, 'isTwoFactorEnabled', {
+                type: sequelize.Sequelize.BOOLEAN,
+                allowNull: false,
+                defaultValue: false,
+            });
+        }
         if (!userColumns.tokenVersion) {
             await queryInterface.addColumn(userTable, 'tokenVersion', {
                 type: sequelize.Sequelize.INTEGER,

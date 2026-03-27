@@ -32,6 +32,13 @@
     font-size: clamp(10px, 2vw, 15px);
   }
 
+  .remember-check {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-left: 0;
+  }
+
   .auth-title {
     font-size: clamp(18px, 3vw, 25px);
     font-weight: 700;

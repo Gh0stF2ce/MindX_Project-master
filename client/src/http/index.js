@@ -5,10 +5,12 @@ const apiHost = getApiHost();
 
 const $host = axios.create({
 	baseURL: apiHost,
+	withCredentials: true,
 });
 
 const $authHost = axios.create({
 	baseURL: apiHost,
+	withCredentials: true,
 });
 
 const authInterceptor = (config) => {

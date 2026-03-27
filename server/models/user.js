@@ -14,9 +14,24 @@ const User = sequelize.define('user',
             allowNull: false,
             unique: true
         },
+        email: {
+            type: DataTypes.CITEXT,
+            allowNull: false,
+            unique: true
+        },
         password: {
             type: DataTypes.STRING,
             allowNull: false
+        },
+        isEmailVerified: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false
+        },
+        isTwoFactorEnabled: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false
         },
         tokenVersion: {
             type: DataTypes.INTEGER,

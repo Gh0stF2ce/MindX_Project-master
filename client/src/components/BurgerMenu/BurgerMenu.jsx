@@ -6,10 +6,13 @@ import { observer } from 'mobx-react-lite';
 import { CloseOutlined } from '@ant-design/icons';
 import { API } from '@mindx/http/API';
 import { ErrorEmmiter, SuccessEmmiter } from '@mindx/components/UI/Toastify/Notify';
+import UserSettingsModal from '@mindx/components/UserSettingsModal/UserSettingsModal';
+import { useState } from 'react';
 
 const BurgerMenu = observer((props) => {
     const { user } = useContext(Context);
     const { isActiveBurger, setIsActiveBurger } = props;
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     const logout = () => {
         user.logout();
@@ -28,6 +31,8 @@ const BurgerMenu = observer((props) => {
     };
 
     return (
+        <>
+        <UserSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
         <div className={`burger-overlay ${isActiveBurger ? 'active' : ''}`} onClick={() => setIsActiveBurger(false)}>
             <div className="burger-menu" onClick={(e) => e.stopPropagation()}>
                 <button className="burger-close-btn" onClick={() => setIsActiveBurger(false)}>
@@ -69,6 +74,9 @@ const BurgerMenu = observer((props) => {
 
                     {user.isAuth ? (
                         <>
+                            <li className="burger-list__item settings-item" onClick={() => { setIsSettingsOpen(true); setIsActiveBurger(false); }}>
+                                Настройки
+                            </li>
                             <li className="burger-list__item logout-all" onClick={logoutAll}>
                                 Выйти на всех устройствах
                             </li>
@@ -86,6 +94,7 @@ const BurgerMenu = observer((props) => {
                 </ul>
             </div>
         </div>
+        </>
     );
 });
 

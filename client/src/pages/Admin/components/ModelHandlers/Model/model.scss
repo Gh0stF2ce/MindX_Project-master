@@ -54,6 +54,18 @@
       }
     }
 
+    .checkbox-group {
+      label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      input[type='checkbox'] {
+        width: auto;
+      }
+    }
+
     .visible_false {
       visibility: hidden;
     }

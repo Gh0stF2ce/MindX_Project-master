@@ -7,6 +7,7 @@ import { Context } from '../../index';
 import { observer } from 'mobx-react-lite';
 import { API } from '@mindx/http/API';
 import { ErrorEmmiter, SuccessEmmiter } from '@mindx/components/UI/Toastify/Notify';
+import UserSettingsModal from '@mindx/components/UserSettingsModal/UserSettingsModal';
 
 const Navbar = observer((props) => {
     const { user } = useContext(Context);
@@ -14,6 +15,7 @@ const Navbar = observer((props) => {
     const activeLink = 'nav-list_link nav-list_link-active';
     const passiveLink = 'nav-list_link';
     const [isMobile, setIsMobile] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const { setIsActiveBurger } = props;
 
     useEffect(() => {
@@ -44,6 +46,7 @@ const Navbar = observer((props) => {
 
     return (
         <nav className="nav">
+            <UserSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
             <div className="container">
                 <div className="nav-row">
                     {!isMobile ? (
@@ -95,6 +98,9 @@ const Navbar = observer((props) => {
                                             <NavLink className="button authorize">
                                                 {user.user.username}
                                             </NavLink>
+                                            <button className="button secondary-action" onClick={() => setIsSettingsOpen(true)}>
+                                                Настройки
+                                            </button>
                                             <button className="button secondary-action" onClick={logoutAll}>
                                                 Выйти везде
                                             </button>

@@ -1,7 +1,6 @@
 require('dotenv').config()
 
 const Sequelize = require('sequelize')
-console.log(process.env.DATABASE_PASSWORD)
 
 module.exports = new Sequelize(
     process.env.DATABASE_NAME,
