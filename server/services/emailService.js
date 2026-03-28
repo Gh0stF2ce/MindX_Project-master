@@ -34,12 +34,14 @@ class EmailService {
     return this.transporter;
   }
 
-  async sendCodeEmail({ to, code, subject, title }) {
+  async sendMail({ to, subject, html, fallbackLog }) {
     const transporter = this.getTransporter();
     const from = process.env.SMTP_FROM?.replace('your_email@gmail.com', process.env.SMTP_USER) || process.env.SMTP_USER;
 
     if (!transporter) {
-      console.log(`[EMAIL FALLBACK] ${subject} for ${to}: ${code}`);
+      if (fallbackLog) {
+        console.log(fallbackLog);
+      }
       return;
     }
 
@@ -49,24 +51,47 @@ class EmailService {
           from,
           to,
           subject,
-          html: `
-            <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-              <h2>${title}</h2>
-              <p>Ваш код подтверждения:</p>
-              <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px;">${code}</div>
-              <p>Код действует 10 минут.</p>
-              <p>Если это были не вы, просто проигнорируйте письмо.</p>
-            </div>
-          `,
+          html,
         }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('SMTP timeout exceeded')), 6000)
-        ),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP timeout exceeded')), 6000)),
       ]);
     } catch (error) {
       console.error(`[EMAIL ERROR] ${subject} for ${to}: ${error.message}`);
-      console.log(`[EMAIL FALLBACK] ${subject} for ${to}: ${code}`);
+      if (fallbackLog) {
+        console.log(fallbackLog);
+      }
     }
+  }
+
+  async sendCodeEmail({ to, code, subject, title }) {
+    await this.sendMail({
+      to,
+      subject,
+      fallbackLog: `[EMAIL FALLBACK] ${subject} for ${to}: ${code}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+          <h2>${title}</h2>
+          <p>Ваш код подтверждения:</p>
+          <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px;">${code}</div>
+          <p>Код действует 10 минут.</p>
+          <p>Если это были не вы, просто проигнорируйте письмо.</p>
+        </div>
+      `,
+    });
+  }
+
+  async sendSecurityNotification({ to, subject, title, lines = [] }) {
+    await this.sendMail({
+      to,
+      subject,
+      fallbackLog: `[EMAIL FALLBACK] ${subject} for ${to}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+          <h2>${title}</h2>
+          ${lines.map((line) => `<p>${line}</p>`).join('')}
+        </div>
+      `,
+    });
   }
 }
 

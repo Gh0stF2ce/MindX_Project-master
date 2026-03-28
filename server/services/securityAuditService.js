@@ -1,6 +1,15 @@
 const { SecurityEvent } = require('../models');
 
 class SecurityAuditService {
+  getRequestIp(req) {
+    const forwarded = req?.headers?.['x-forwarded-for'];
+    if (typeof forwarded === 'string' && forwarded.length > 0) {
+      return forwarded.split(',')[0].trim();
+    }
+
+    return req?.ip || null;
+  }
+
   async log({
     req,
     userId = null,
@@ -19,7 +28,7 @@ class SecurityAuditService {
         status,
         targetType,
         targetId,
-        ipAddress: req?.ip || req?.headers?.['x-forwarded-for'] || null,
+        ipAddress: this.getRequestIp(req),
         userAgent: req?.headers?.['user-agent'] || null,
         details: details ? JSON.stringify(details) : null,
       });
