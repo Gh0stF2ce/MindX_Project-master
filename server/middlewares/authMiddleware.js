@@ -2,6 +2,9 @@ const ApiError = require('../error/ApiError');
 const jwt = require('jsonwebtoken');
 const { User, Role } = require('../models');
 const userSessionService = require('../services/userSessionService');
+const parseCookies = require('../utils/parseCookies');
+
+const AUTH_COOKIE_NAME = 'mindx_auth_token';
 
 module.exports = function () {
   return async function (req, res, next) {
@@ -11,13 +14,21 @@ module.exports = function () {
     }
 
     try {
-      if (!req.headers?.authorization) {
-        throw new Error('Требуется авторизация');
+      const cookies = parseCookies(req.headers?.cookie || '');
+      const cookieToken = cookies[AUTH_COOKIE_NAME];
+      const authorizationHeader = req.headers?.authorization;
+
+      let token = cookieToken || null;
+
+      if (!token && authorizationHeader) {
+        const [bearer, bearerToken] = authorizationHeader.split(' ');
+        if (bearer === 'Bearer' && bearerToken) {
+          token = bearerToken;
+        }
       }
 
-      const [bearer, token] = req.headers.authorization.split(' ');
-      if (bearer !== 'Bearer' || !token) {
-        throw new Error('Неверный формат токена');
+      if (!token) {
+        throw new Error('Требуется авторизация');
       }
 
       const payload = jwt.verify(token, process.env.SECRET_KEY);

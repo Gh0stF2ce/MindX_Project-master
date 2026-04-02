@@ -29,7 +29,6 @@ const AdminPage = () => {
       const response = await API.user.logoutAllUsers();
       SuccessEmmiter(response.message);
       user.logout();
-      localStorage.setItem('token', null);
       window.location.reload();
     } catch (error) {
       ErrorEmmiter(error?.response?.data?.error || 'Не удалось завершить все сессии.');

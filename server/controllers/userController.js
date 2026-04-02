@@ -15,6 +15,7 @@ const userSessionService = require('../services/userSessionService');
 
 const DEFAULT_USER_ROLE_ID = 'aff50f23-2fbc-41be-ba07-c1c69c5e388c';
 const GENERIC_AUTH_ERROR = 'Неверный логин/email или пароль';
+const AUTH_COOKIE_NAME = 'mindx_auth_token';
 
 function errorHandling(error) {
   if (error.name === 'SequelizeUniqueConstraintError') {
@@ -35,6 +36,7 @@ class UserController {
     this.check = this.check.bind(this);
     this.getProfile = this.getProfile.bind(this);
     this.getSessions = this.getSessions.bind(this);
+    this.logout = this.logout.bind(this);
     this.logoutSession = this.logoutSession.bind(this);
     this.logoutAll = this.logoutAll.bind(this);
     this.logoutAllUsers = this.logoutAllUsers.bind(this);
@@ -59,12 +61,36 @@ class UserController {
     return generateJwt(user.id, user.username, user.role?.name || 'USER', user.tokenVersion, sessionId);
   }
 
-  async issueSessionAuth(req, user, rememberDevice = false) {
-    const session = await userSessionService.createSession(req, user.id, rememberDevice);
+  setAuthCookie(res, token) {
+    res.cookie(AUTH_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.MODE === 'PROD',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000,
+      path: '/',
+    });
+  }
+
+  clearAuthCookie(res) {
+    res.clearCookie(AUTH_COOKIE_NAME, {
+      httpOnly: true,
+      secure: process.env.MODE === 'PROD',
+      sameSite: 'lax',
+      path: '/',
+    });
+  }
+
+  buildAuthResponse(user) {
     return {
-      token: this.issueAuthToken(user, session.sessionId),
-      session,
+      user: this.buildUserDto(user),
     };
+  }
+
+  async issueSessionAuth(req, res, user, rememberDevice = false) {
+    const session = await userSessionService.createSession(req, user.id, rememberDevice);
+    const token = this.issueAuthToken(user, session.sessionId);
+    this.setAuthCookie(res, token);
+    return { session };
   }
 
   async notifyAboutNewDevice(req, user) {
@@ -214,11 +240,11 @@ class UserController {
         });
       }
 
-      const { token } = await this.issueSessionAuth(req, user);
+      await this.issueSessionAuth(req, res, user);
 
       return res.json({
         message: 'Почта подтверждена.',
-        token,
+        ...this.buildAuthResponse(user),
       });
     } catch (error) {
       await securityAuditService.log({
@@ -436,7 +462,7 @@ class UserController {
       }
 
       await this.notifyAboutNewDevice(req, user);
-      const { token } = await this.issueSessionAuth(req, user, isTrusted);
+      await this.issueSessionAuth(req, res, user, isTrusted);
 
       await securityAuditService.log({
         req,
@@ -448,7 +474,7 @@ class UserController {
         details: { viaTrustedDevice: isTrusted },
       });
 
-      return res.json({ token });
+      return res.json(this.buildAuthResponse(user));
     } catch (error) {
       await securityAuditService.log({
         req,
@@ -519,7 +545,7 @@ class UserController {
       }
 
       await this.notifyAboutNewDevice(req, codeEntryUser.user);
-      const { token } = await this.issueSessionAuth(req, codeEntryUser.user, rememberDevice);
+      await this.issueSessionAuth(req, res, codeEntryUser.user, rememberDevice);
 
       await securityAuditService.log({
         req,
@@ -531,7 +557,7 @@ class UserController {
         details: { rememberDevice: Boolean(rememberDevice) },
       });
 
-      return res.json({ token });
+      return res.json(this.buildAuthResponse(codeEntryUser.user));
     } catch (error) {
       return next(ApiError.badRequest(error.message));
     }
@@ -546,7 +572,8 @@ class UserController {
       });
 
       const token = this.issueAuthToken(user, req.user.sessionId);
-      res.json({ token });
+      this.setAuthCookie(res, token);
+      res.json(this.buildAuthResponse(user));
     } catch {
       return next(ApiError.unauthorized('Токен устарел'));
     }
@@ -572,6 +599,29 @@ class UserController {
       return res.json(sessions);
     } catch (error) {
       return next(ApiError.badRequest(`Ошибка получения сессий: ${error.message}`));
+    }
+  }
+
+  async logout(req, res, next) {
+    try {
+      if (req.user?.sessionId) {
+        await userSessionService.revokeSession(req.user.id, req.user.sessionId);
+      }
+
+      this.clearAuthCookie(res);
+
+      await securityAuditService.log({
+        req,
+        userId: req.user?.id,
+        username: req.user?.username,
+        action: 'auth.logout',
+        targetType: 'session',
+        targetId: req.user?.sessionId || null,
+      });
+
+      return res.json({ message: 'Вы вышли из аккаунта.' });
+    } catch (error) {
+      return next(ApiError.badRequest(`Ошибка выхода: ${error.message}`));
     }
   }
 
@@ -609,6 +659,7 @@ class UserController {
       await user.update({ tokenVersion: nextVersion });
       await trustedDeviceService.revokeAllForUser(res, user.id);
       await userSessionService.revokeAllForUser(user.id);
+      this.clearAuthCookie(res);
 
       await securityAuditService.log({
         req,
@@ -934,6 +985,7 @@ class UserController {
       }
 
       const token = this.issueAuthToken(refreshedUser, req.user.sessionId);
+      this.setAuthCookie(res, token);
 
       await securityAuditService.log({
         req,
@@ -953,7 +1005,7 @@ class UserController {
 
       res.json({
         message: emailChanged ? 'Профиль обновлён. Подтвердите новую почту кодом из письма.' : 'Данные пользователя обновлены',
-        token,
+        ...this.buildAuthResponse(refreshedUser),
       });
     } catch (error) {
       errorHandling(error);

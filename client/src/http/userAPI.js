@@ -1,5 +1,4 @@
 import { $host, $authHost } from './index';
-import { jwtDecode } from 'jwt-decode';
 
 const getList = async () => {
   const { data } = await $authHost.get('/api/admin/user');
@@ -16,15 +15,6 @@ const getById = async (id) => {
 
 const SignIn = async (identifier, password) => {
   const { data } = await $host.post('/api/user/signin', { identifier, password });
-
-  if (data?.token) {
-    localStorage.setItem('token', data.token);
-    return {
-      ...data,
-      user: jwtDecode(data.token),
-    };
-  }
-
   return data;
 };
 
@@ -34,12 +24,7 @@ const VerifyTwoFactor = async (challengeToken, code, rememberDevice) => {
     code,
     rememberDevice,
   });
-
-  localStorage.setItem('token', data.token);
-  return {
-    ...data,
-    user: jwtDecode(data.token),
-  };
+  return data;
 };
 
 const SignUp = async (username, email, password, confirmPassword) => {
@@ -54,11 +39,7 @@ const SignUp = async (username, email, password, confirmPassword) => {
 
 const VerifyEmail = async (email, code) => {
   const { data } = await $host.post('/api/user/verify-email', { email, code });
-  localStorage.setItem('token', data.token);
-  return {
-    ...data,
-    user: jwtDecode(data.token),
-  };
+  return data;
 };
 
 const resendVerification = async (email) => {
@@ -83,8 +64,7 @@ const resetPassword = async (email, code, password, confirmPassword) => {
 
 const check = async () => {
   const { data } = await $authHost.get('/api/user/auth');
-  localStorage.setItem('token', data.token);
-  return jwtDecode(data.token);
+  return data.user;
 };
 
 const getProfile = async () => {
@@ -104,9 +84,11 @@ const logoutSession = async (sessionId) => {
 
 const updateProfile = async (model) => {
   const { data } = await $authHost.put('/api/user/profile', model);
-  if (data?.token) {
-    localStorage.setItem('token', data.token);
-  }
+  return data;
+};
+
+const logout = async () => {
+  const { data } = await $authHost.post('/api/user/logout');
   return data;
 };
 
@@ -150,6 +132,7 @@ export const userAPI = {
   getSessions,
   logoutSession,
   updateProfile,
+  logout,
   logoutAll,
   logoutAllUsers,
   update,

@@ -127,7 +127,6 @@ const UserSettingsModal = ({ isOpen, onClose }) => {
         confirmNewPassword
       );
       SuccessEmmiter(response.message || 'Пароль изменён. Войдите снова.');
-      localStorage.removeItem('token');
       setTimeout(() => {
         window.location.reload();
       }, 800);
@@ -142,7 +141,6 @@ const UserSettingsModal = ({ isOpen, onClose }) => {
       SuccessEmmiter(response.message || 'Почта подтверждена.');
       setForm((prev) => ({ ...prev, isEmailVerified: true }));
       setVerificationCode('');
-      localStorage.setItem('token', response.token);
       window.location.reload();
     } catch (error) {
       ErrorEmmiter(error?.response?.data?.error || 'Не удалось подтвердить почту.');
@@ -164,7 +162,6 @@ const UserSettingsModal = ({ isOpen, onClose }) => {
       SuccessEmmiter(response.message || 'Сессия завершена.');
 
       if (isCurrent) {
-        localStorage.removeItem('token');
         window.location.reload();
         return;
       }

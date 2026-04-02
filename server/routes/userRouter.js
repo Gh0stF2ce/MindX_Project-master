@@ -27,6 +27,7 @@ router.post('/forgot-password', validateRequest(forgotPasswordSchema), userContr
 router.post('/reset-password', validateRequest(resetPasswordSchema), userController.resetPassword)
 router.post('/verify-2fa', validateRequest(verifyTwoFactorSchema), userController.verifyTwoFactor)
 router.get('/auth', authMiddleware(), userController.check)
+router.post('/logout', authMiddleware(), userController.logout)
 router.post('/logout-all', authMiddleware(), userController.logoutAll)
 router.put('/:id', authMiddleware(), validateRequest(userPutSchema), userController.update)
 

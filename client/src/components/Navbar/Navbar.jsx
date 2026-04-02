@@ -28,17 +28,23 @@ const Navbar = observer((props) => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const logout = () => {
-        user.logout();
-        localStorage.setItem('token', null);
-        window.location.reload();
+    const logout = async () => {
+        try {
+            const response = await API.user.logout();
+            SuccessEmmiter(response.message);
+        } catch (error) {
+            ErrorEmmiter(error?.response?.data?.error || 'Не удалось выйти из аккаунта.');
+        } finally {
+            user.logout();
+            window.location.reload();
+        }
     };
 
     const logoutAll = async () => {
         try {
             const response = await API.user.logoutAll();
             SuccessEmmiter(response.message);
-            logout();
+            await logout();
         } catch (error) {
             ErrorEmmiter(error?.response?.data?.error || 'Не удалось завершить все сессии.');
         }
