@@ -58,6 +58,22 @@
   background: #fff6ef;
 }
 
+.password-box {
+  padding: 14px;
+  border-radius: 14px;
+  background: #fff6ef;
+
+  h3 {
+    margin: 0 0 4px;
+  }
+}
+
+.password-reset-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
 .session-box {
   padding: 14px;
   border-radius: 14px;

@@ -10,12 +10,14 @@ const UserSettingsModal = ({ isOpen, onClose }) => {
   const [form, setForm] = useState({
     username: '',
     email: '',
-    password: '',
-    confirmPassword: '',
     isTwoFactorEnabled: false,
     isEmailVerified: true,
   });
   const [verificationCode, setVerificationCode] = useState('');
+  const [passwordResetRequested, setPasswordResetRequested] = useState(false);
+  const [passwordResetCode, setPasswordResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   const loadSessions = async () => {
     try {
@@ -40,8 +42,6 @@ const UserSettingsModal = ({ isOpen, onClose }) => {
         setForm({
           username: profile.username || '',
           email: profile.email || '',
-          password: '',
-          confirmPassword: '',
           isTwoFactorEnabled: Boolean(profile.isTwoFactorEnabled),
           isEmailVerified: Boolean(profile.isEmailVerified),
         });
@@ -71,11 +71,6 @@ const UserSettingsModal = ({ isOpen, onClose }) => {
         email: form.email.trim(),
       };
 
-      if (form.password.trim()) {
-        payload.password = form.password;
-        payload.confirmPassword = form.confirmPassword;
-      }
-
       const response = await API.user.updateProfile(payload);
       SuccessEmmiter(response.message || 'Настройки сохранены.');
 
@@ -83,14 +78,6 @@ const UserSettingsModal = ({ isOpen, onClose }) => {
         setForm((prev) => ({
           ...prev,
           isEmailVerified: false,
-          password: '',
-          confirmPassword: '',
-        }));
-      } else {
-        setForm((prev) => ({
-          ...prev,
-          password: '',
-          confirmPassword: '',
         }));
       }
 
@@ -108,6 +95,44 @@ const UserSettingsModal = ({ isOpen, onClose }) => {
       SuccessEmmiter(response.message || 'Настройка двухэтапной аутентификации сохранена.');
     } catch (error) {
       ErrorEmmiter(error?.response?.data?.error || 'Не удалось сохранить настройку двухэтапной аутентификации.');
+    }
+  };
+
+  const requestPasswordReset = async () => {
+    try {
+      if (!newPassword.trim() || !confirmNewPassword.trim()) {
+        ErrorEmmiter('Сначала введите новый пароль и его подтверждение.');
+        return;
+      }
+
+      if (newPassword !== confirmNewPassword) {
+        ErrorEmmiter('Пароли не совпадают.');
+        return;
+      }
+
+      const response = await API.user.forgotPassword(form.email.trim());
+      setPasswordResetRequested(true);
+      SuccessEmmiter(response.message || 'Код для смены пароля отправлен на почту.');
+    } catch (error) {
+      ErrorEmmiter(error?.response?.data?.error || 'Не удалось отправить код для смены пароля.');
+    }
+  };
+
+  const confirmPasswordReset = async () => {
+    try {
+      const response = await API.user.resetPassword(
+        form.email.trim(),
+        passwordResetCode.trim(),
+        newPassword,
+        confirmNewPassword
+      );
+      SuccessEmmiter(response.message || 'Пароль изменён. Войдите снова.');
+      localStorage.removeItem('token');
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
+    } catch (error) {
+      ErrorEmmiter(error?.response?.data?.error || 'Не удалось изменить пароль.');
     }
   };
 
@@ -186,23 +211,63 @@ const UserSettingsModal = ({ isOpen, onClose }) => {
               <input type="email" value={form.email} onChange={(e) => handleChange('email', e.target.value)} />
             </label>
 
-            <label>
-              Новый пароль
-              <input
-                type="password"
-                value={form.password}
-                onChange={(e) => handleChange('password', e.target.value)}
-              />
-            </label>
+            <div className="password-box">
+              <div className="settings-actions settings-actions--between">
+                <div>
+                  <h3>Смена пароля</h3>
+                  <p className="settings-hint">
+                    Сначала задайте новый пароль, затем подтвердите смену кодом из письма.
+                  </p>
+                </div>
+                {!passwordResetRequested && (
+                  <button type="button" className="primary-btn" onClick={requestPasswordReset}>
+                    Получить код
+                  </button>
+                )}
+              </div>
 
-            <label>
-              Повторите пароль
-              <input
-                type="password"
-                value={form.confirmPassword}
-                onChange={(e) => handleChange('confirmPassword', e.target.value)}
-              />
-            </label>
+              <div className="password-reset-form">
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Новый пароль"
+                />
+                <input
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  placeholder="Повторите новый пароль"
+                />
+
+                {passwordResetRequested && (
+                  <>
+                    <input
+                      type="text"
+                      value={passwordResetCode}
+                      onChange={(e) => setPasswordResetCode(e.target.value)}
+                      placeholder="Код из письма"
+                      maxLength={6}
+                    />
+                    <div className="settings-actions">
+                      <button
+                        type="button"
+                        className="secondary-btn"
+                        onClick={() => {
+                          setPasswordResetRequested(false);
+                          setPasswordResetCode('');
+                        }}
+                      >
+                        Отмена
+                      </button>
+                      <button type="button" className="primary-btn" onClick={confirmPasswordReset}>
+                        Подтвердить смену
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
 
             <label className="settings-check">
               <input
