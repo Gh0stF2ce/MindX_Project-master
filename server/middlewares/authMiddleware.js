@@ -1,6 +1,7 @@
 const ApiError = require('../error/ApiError');
 const jwt = require('jsonwebtoken');
 const { User, Role } = require('../models');
+const userSessionService = require('../services/userSessionService');
 
 module.exports = function () {
   return async function (req, res, next) {
@@ -39,17 +40,27 @@ module.exports = function () {
         return next(ApiError.unauthorized('Сессия устарела. Войдите снова.'));
       }
 
+      if (payload.sessionId) {
+        const session = await userSessionService.getActiveSession(user.id, payload.sessionId);
+        if (!session) {
+          return next(ApiError.unauthorized('Сессия завершена. Войдите снова.'));
+        }
+
+        await userSessionService.touchSession(payload.sessionId);
+      }
+
       req.user = {
         id: user.id,
         username: user.username,
         role: user.role?.name || payload.role,
         tokenVersion: user.tokenVersion,
+        sessionId: payload.sessionId || null,
       };
 
       next();
     } catch (error) {
       if (error instanceof jwt.TokenExpiredError) {
-        return next(ApiError.unauthorized('Срок действия токена истек'));
+        return next(ApiError.unauthorized('Срок действия токена истёк'));
       }
 
       if (error instanceof jwt.JsonWebTokenError) {

@@ -66,6 +66,21 @@ const resendVerification = async (email) => {
   return data;
 };
 
+const forgotPassword = async (email) => {
+  const { data } = await $host.post('/api/user/forgot-password', { email });
+  return data;
+};
+
+const resetPassword = async (email, code, password, confirmPassword) => {
+  const { data } = await $host.post('/api/user/reset-password', {
+    email,
+    code,
+    password,
+    confirmPassword,
+  });
+  return data;
+};
+
 const check = async () => {
   const { data } = await $authHost.get('/api/user/auth');
   localStorage.setItem('token', data.token);
@@ -74,6 +89,16 @@ const check = async () => {
 
 const getProfile = async () => {
   const { data } = await $authHost.get('/api/user/profile');
+  return data;
+};
+
+const getSessions = async () => {
+  const { data } = await $authHost.get('/api/user/sessions');
+  return data;
+};
+
+const logoutSession = async (sessionId) => {
+  const { data } = await $authHost.delete(`/api/user/sessions/${sessionId}`);
   return data;
 };
 
@@ -118,8 +143,12 @@ export const userAPI = {
   SignUp,
   VerifyEmail,
   resendVerification,
+  forgotPassword,
+  resetPassword,
   check,
   getProfile,
+  getSessions,
+  logoutSession,
   updateProfile,
   logoutAll,
   logoutAllUsers,

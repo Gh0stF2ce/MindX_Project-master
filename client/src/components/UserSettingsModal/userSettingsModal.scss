@@ -58,6 +58,37 @@
   background: #fff6ef;
 }
 
+.session-box {
+  padding: 14px;
+  border-radius: 14px;
+  background: #f8f8f8;
+
+  h3 {
+    margin: 0;
+  }
+}
+
+.session-list {
+  display: grid;
+  gap: 10px;
+}
+
+.session-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: white;
+  border: 1px solid #e4e4e4;
+}
+
+.session-item__content {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+}
+
 .settings-actions {
   display: flex;
   gap: 10px;

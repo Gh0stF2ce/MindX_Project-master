@@ -69,6 +69,26 @@ class AuthCodeService {
     return challengeToken;
   }
 
+  async createPasswordResetCode(user) {
+    await this.clearActiveCodes(user.id, 'password_reset');
+    const code = this.generateCode();
+
+    await AuthCode.create({
+      userId: user.id,
+      purpose: 'password_reset',
+      email: user.email,
+      codeHash: hashValue(code),
+      expiresAt: new Date(Date.now() + CODE_TTL_MINUTES * 60 * 1000),
+    });
+
+    await emailService.sendCodeEmail({
+      to: user.email,
+      code,
+      subject: 'Сброс пароля',
+      title: 'Код для сброса пароля',
+    });
+  }
+
   async consumeCode({ userId, purpose, code, challengeToken = null }) {
     const where = {
       userId,
@@ -92,7 +112,7 @@ class AuthCodeService {
       return false;
     }
 
-    if (authCode.codeHash !== hashValue(code)) {
+    if (authCode.codeHash !== hashValue(String(code || '').replace(/\s+/g, ''))) {
       return false;
     }
 

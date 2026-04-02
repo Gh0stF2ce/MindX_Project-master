@@ -1,7 +1,7 @@
 const argon2 = require('argon2');
 const { Op } = require('sequelize');
 const ApiError = require('../error/ApiError');
-const { User, Role, AuthCode, SecurityEvent } = require('../models/index');
+const { User, Role, AuthCode, UserSession } = require('../models');
 const validateCheck = require('../validators/isNullValidator');
 const generateHashPassword = require('../utils/generateHashPassword');
 const generateJwt = require('../utils/generateJwt');
@@ -11,6 +11,7 @@ const trustedDeviceService = require('../services/trustedDeviceService');
 const emailService = require('../services/emailService');
 const accountProtectionService = require('../services/accountProtectionService');
 const suspiciousActivityService = require('../services/suspiciousActivityService');
+const userSessionService = require('../services/userSessionService');
 
 const DEFAULT_USER_ROLE_ID = 'aff50f23-2fbc-41be-ba07-c1c69c5e388c';
 const GENERIC_AUTH_ERROR = 'Неверный логин/email или пароль';
@@ -27,10 +28,14 @@ class UserController {
     this.signup = this.signup.bind(this);
     this.verifyEmail = this.verifyEmail.bind(this);
     this.resendVerification = this.resendVerification.bind(this);
+    this.forgotPassword = this.forgotPassword.bind(this);
+    this.resetPassword = this.resetPassword.bind(this);
     this.signin = this.signin.bind(this);
     this.verifyTwoFactor = this.verifyTwoFactor.bind(this);
     this.check = this.check.bind(this);
     this.getProfile = this.getProfile.bind(this);
+    this.getSessions = this.getSessions.bind(this);
+    this.logoutSession = this.logoutSession.bind(this);
     this.logoutAll = this.logoutAll.bind(this);
     this.logoutAllUsers = this.logoutAllUsers.bind(this);
     this.getAll = this.getAll.bind(this);
@@ -50,28 +55,29 @@ class UserController {
     };
   }
 
-  issueAuthToken(user) {
-    return generateJwt(user.id, user.username, user.role?.name || 'USER', user.tokenVersion);
+  issueAuthToken(user, sessionId = null) {
+    return generateJwt(user.id, user.username, user.role?.name || 'USER', user.tokenVersion, sessionId);
   }
 
-  getRequestIp(req) {
-    return securityAuditService.getRequestIp(req);
+  async issueSessionAuth(req, user, rememberDevice = false) {
+    const session = await userSessionService.createSession(req, user.id, rememberDevice);
+    return {
+      token: this.issueAuthToken(user, session.sessionId),
+      session,
+    };
   }
 
   async notifyAboutNewDevice(req, user) {
-    const knownSignin = await SecurityEvent.findOne({
+    const knownSession = await UserSession.findOne({
       where: {
         userId: user.id,
-        action: {
-          [Op.in]: ['auth.signin', 'auth.signin.2fa_success'],
-        },
-        status: 'success',
-        userAgent: req?.headers?.['user-agent'] || null,
-        ipAddress: this.getRequestIp(req),
+        ipAddress: userSessionService.getRequestIp(req),
+        userAgent: userSessionService.getRequestUserAgent(req),
+        revokedAt: null,
       },
     });
 
-    if (knownSignin) {
+    if (knownSession) {
       return;
     }
 
@@ -81,7 +87,7 @@ class UserController {
       title: 'Обнаружен вход с нового устройства',
       lines: [
         `Аккаунт: ${user.username}`,
-        `IP: ${this.getRequestIp(req) || 'не определён'}`,
+        `IP: ${userSessionService.getRequestIp(req) || 'не определён'}`,
         `Время: ${new Date().toLocaleString('ru-RU')}`,
         'Если это были не вы, смените пароль и завершите все активные сессии.',
       ],
@@ -184,41 +190,34 @@ class UserController {
         include: [{ model: Role, attributes: ['name'], required: false }],
       });
 
-      validateCheck(!user, '???????????? ?? ??????.');
+      validateCheck(!user, 'Пользователь не найден.');
 
-      if (user.isEmailVerified) {
-        const token = this.issueAuthToken(user);
-        return res.json({
-          message: '????? ??? ????????????.',
-          token,
+      if (!user.isEmailVerified) {
+        const isValid = await authCodeService.consumeCode({
+          userId: user.id,
+          purpose: 'email_verification',
+          code,
+        });
+        validateCheck(!isValid, 'Неверный или просроченный код.');
+
+        user.isEmailVerified = true;
+        await user.save();
+
+        await securityAuditService.log({
+          req,
+          userId: user.id,
+          username: user.username,
+          action: 'auth.verify_email',
+          targetType: 'user',
+          targetId: user.id,
+          details: { email: user.email },
         });
       }
 
-      const normalizedCode = String(code || '').replace(/\s+/g, '');
-      const isValid = await authCodeService.consumeCode({
-        userId: user.id,
-        purpose: 'email_verification',
-        code: normalizedCode,
-      });
-      validateCheck(!isValid, '???????? ??? ???????????? ???.');
-
-      user.isEmailVerified = true;
-      await user.save();
-
-      const token = this.issueAuthToken(user);
-
-      await securityAuditService.log({
-        req,
-        userId: user.id,
-        username: user.username,
-        action: 'auth.verify_email',
-        targetType: 'user',
-        targetId: user.id,
-        details: { email: user.email },
-      });
+      const { token } = await this.issueSessionAuth(req, user);
 
       return res.json({
-        message: '????? ????????????.',
+        message: 'Почта подтверждена.',
         token,
       });
     } catch (error) {
@@ -254,6 +253,108 @@ class UserController {
 
       return res.json({ message: 'Новый код отправлен на почту.' });
     } catch (error) {
+      return next(ApiError.badRequest(error.message));
+    }
+  }
+
+  async forgotPassword(req, res, next) {
+    try {
+      const { email } = req.body;
+      const user = await User.findOne({ where: { email } });
+
+      if (user) {
+        await authCodeService.createPasswordResetCode(user);
+        await securityAuditService.log({
+          req,
+          userId: user.id,
+          username: user.username,
+          action: 'auth.password_reset.request',
+          targetType: 'user',
+          targetId: user.id,
+          details: { email: user.email },
+        });
+      } else {
+        await securityAuditService.log({
+          req,
+          username: email,
+          action: 'auth.password_reset.request',
+          status: 'failure',
+          targetType: 'user',
+          details: { email, reason: 'user_not_found' },
+        });
+      }
+
+      return res.json({
+        message: 'Если пользователь с такой почтой существует, код для сброса пароля отправлен.',
+      });
+    } catch (error) {
+      return next(ApiError.badRequest('Не удалось запросить сброс пароля.'));
+    }
+  }
+
+  async resetPassword(req, res, next) {
+    try {
+      const { email, code, password } = req.body;
+      const user = await User.findOne({
+        where: { email },
+        include: [{ model: Role, attributes: ['name'], required: false }],
+      });
+
+      validateCheck(!user, 'Пользователь не найден.');
+
+      const isValid = await authCodeService.consumeCode({
+        userId: user.id,
+        purpose: 'password_reset',
+        code,
+      });
+      validateCheck(!isValid, 'Неверный или просроченный код.');
+
+      const hashPassword = await generateHashPassword(password);
+      const nextTokenVersion = Number(user.tokenVersion) + 1;
+
+      await user.update({
+        password: hashPassword,
+        lastPasswordChangedAt: new Date(),
+        failedLoginAttempts: 0,
+        loginLockUntil: null,
+        tokenVersion: nextTokenVersion,
+      });
+
+      await userSessionService.revokeAllForUser(user.id);
+      await trustedDeviceService.revokeAllForUser(res, user.id);
+
+      await emailService.sendSecurityNotification({
+        to: user.email,
+        subject: 'Пароль аккаунта изменён',
+        title: 'Пароль был успешно изменён',
+        lines: [
+          `Аккаунт: ${user.username}`,
+          `Время: ${new Date().toLocaleString('ru-RU')}`,
+          'Все прошлые сессии завершены. Если это были не вы, срочно свяжитесь с администратором.',
+        ],
+      });
+
+      await securityAuditService.log({
+        req,
+        userId: user.id,
+        username: user.username,
+        action: 'auth.password_reset.complete',
+        targetType: 'user',
+        targetId: user.id,
+        details: { email: user.email },
+      });
+
+      return res.json({
+        message: 'Пароль изменён. Теперь войдите с новым паролем.',
+      });
+    } catch (error) {
+      await securityAuditService.log({
+        req,
+        action: 'auth.password_reset.complete',
+        status: 'failure',
+        targetType: 'user',
+        details: { email: req.body?.email, reason: error.message },
+      });
       return next(ApiError.badRequest(error.message));
     }
   }
@@ -307,7 +408,7 @@ class UserController {
       if (!user.isEmailVerified) {
         return next(
           ApiError.forbidden(
-            '????? ?? ????????????. ??????? ????????? ?????????? ??? ??? ????????? ????? ??? ?? ?????? ?????????????.'
+            'Почта не подтверждена. Введите последний полученный код или запросите новый код на экране подтверждения.'
           )
         );
       }
@@ -330,13 +431,12 @@ class UserController {
           requiresTwoFactor: true,
           challengeToken,
           email: user.email,
-          message: '??? ????????????? ????????? ?? ?????.',
+          message: 'Код подтверждения отправлен на почту.',
         });
       }
 
       await this.notifyAboutNewDevice(req, user);
-
-      const token = this.issueAuthToken(user);
+      const { token } = await this.issueSessionAuth(req, user, isTrusted);
 
       await securityAuditService.log({
         req,
@@ -373,7 +473,7 @@ class UserController {
         include: [{ model: User, include: [{ model: Role, attributes: ['name'], required: false }] }],
       });
 
-      validateCheck(!codeEntryUser?.user, '?????? ????????????? ?? ???????.');
+      validateCheck(!codeEntryUser?.user, 'Сессия подтверждения не найдена.');
       accountProtectionService.assertNotLocked(codeEntryUser.user);
 
       const valid = await authCodeService.consumeCode({
@@ -382,8 +482,13 @@ class UserController {
         code,
         challengeToken,
       });
+
       if (!valid) {
-        const failedState = await accountProtectionService.registerFailedLogin(req, codeEntryUser.user, 'invalid_two_factor_code');
+        const failedState = await accountProtectionService.registerFailedLogin(
+          req,
+          codeEntryUser.user,
+          'invalid_two_factor_code'
+        );
         await securityAuditService.log({
           req,
           userId: codeEntryUser.user.id,
@@ -397,11 +502,12 @@ class UserController {
             lockedUntil: failedState?.loginLockUntil || null,
           },
         });
+
         return next(
           ApiError.badRequest(
             failedState?.shouldLock
               ? accountProtectionService.getLockMessage({ loginLockUntil: failedState.loginLockUntil })
-              : '???????? ??? ???????????? ???.'
+              : 'Неверный или просроченный код.'
           )
         );
       }
@@ -413,8 +519,7 @@ class UserController {
       }
 
       await this.notifyAboutNewDevice(req, codeEntryUser.user);
-
-      const token = this.issueAuthToken(codeEntryUser.user);
+      const { token } = await this.issueSessionAuth(req, codeEntryUser.user, rememberDevice);
 
       await securityAuditService.log({
         req,
@@ -440,7 +545,7 @@ class UserController {
         rejectOnEmpty: true,
       });
 
-      const token = this.issueAuthToken(user);
+      const token = this.issueAuthToken(user, req.user.sessionId);
       res.json({ token });
     } catch {
       return next(ApiError.unauthorized('Токен устарел'));
@@ -461,6 +566,38 @@ class UserController {
     }
   }
 
+  async getSessions(req, res, next) {
+    try {
+      const sessions = await userSessionService.listSessions(req.user.id, req.user.sessionId);
+      return res.json(sessions);
+    } catch (error) {
+      return next(ApiError.badRequest(`Ошибка получения сессий: ${error.message}`));
+    }
+  }
+
+  async logoutSession(req, res, next) {
+    try {
+      const { sessionId } = req.params;
+      validateCheck(!sessionId, 'Не задан id сессии');
+
+      const isRevoked = await userSessionService.revokeSession(req.user.id, sessionId);
+      validateCheck(!isRevoked, 'Сессия не найдена');
+
+      await securityAuditService.log({
+        req,
+        userId: req.user.id,
+        username: req.user.username,
+        action: 'auth.logout_session',
+        targetType: 'session',
+        targetId: sessionId,
+      });
+
+      return res.json({ message: 'Сессия завершена.' });
+    } catch (error) {
+      return next(ApiError.badRequest(`Ошибка завершения сессии: ${error.message}`));
+    }
+  }
+
   async logoutAll(req, res, next) {
     try {
       const user = await User.findByPk(req.user.id, {
@@ -471,6 +608,7 @@ class UserController {
       const nextVersion = Number(user.tokenVersion) + 1;
       await user.update({ tokenVersion: nextVersion });
       await trustedDeviceService.revokeAllForUser(res, user.id);
+      await userSessionService.revokeAllForUser(user.id);
 
       await securityAuditService.log({
         req,
@@ -495,6 +633,7 @@ class UserController {
         where: {},
       });
       await trustedDeviceService.revokeAll(res);
+      await userSessionService.revokeAll();
 
       await securityAuditService.log({
         req,
@@ -573,7 +712,7 @@ class UserController {
   async updateUser(req, res, next) {
     try {
       const { id } = req.params;
-      validateCheck(!id, '?? ????? id ????????????');
+      validateCheck(!id, 'Не задан id пользователя');
       const { username, email, password, roleId, isTwoFactorEnabled, isEmailVerified } = req.body;
 
       const user = await User.findByPk(id, {
@@ -589,9 +728,9 @@ class UserController {
           'loginLockUntil',
         ],
       });
-      validateCheck(!user, '???????????? ?? ??????');
+      validateCheck(!user, 'Пользователь не найден');
 
-      const hashPassword = password && (await generateHashPassword(password));
+      const hashPassword = password ? await generateHashPassword(password) : null;
       const emailChanged = Boolean(email && email !== user.email);
       const passwordChanged = Boolean(hashPassword);
       const shouldRotateToken =
@@ -606,14 +745,22 @@ class UserController {
         ...(email && { email }),
         ...(typeof isTwoFactorEnabled === 'boolean' && { isTwoFactorEnabled }),
         ...(typeof isEmailVerified === 'boolean' && { isEmailVerified }),
-        ...(passwordChanged && { password: hashPassword, lastPasswordChangedAt: new Date() }),
+        ...(passwordChanged && {
+          password: hashPassword,
+          lastPasswordChangedAt: new Date(),
+          failedLoginAttempts: 0,
+          loginLockUntil: null,
+        }),
         ...(roleId && { roleId }),
         ...(shouldRotateToken && { tokenVersion: Number(user.tokenVersion) + 1 }),
-        ...(passwordChanged && { failedLoginAttempts: 0, loginLockUntil: null }),
       };
 
       const isUpdate = await User.update(payload, { where: { id } });
-      validateCheck(!isUpdate[0], '???????????? ?? ??????');
+      validateCheck(!isUpdate[0], 'Пользователь не найден');
+
+      if (passwordChanged) {
+        await userSessionService.revokeAllForUser(id);
+      }
 
       const updatedUser = await User.findByPk(id, {
         include: [{ model: Role, attributes: ['name'], required: false }],
@@ -643,12 +790,12 @@ class UserController {
       if (passwordChanged) {
         await emailService.sendSecurityNotification({
           to: updatedUser.email,
-          subject: '?????? ???????? ???????',
-          title: '? ???????? ??????? ??????',
+          subject: 'Пароль аккаунта изменён',
+          title: 'В аккаунте изменён пароль',
           lines: [
-            '???????: ' + updatedUser.username,
-            '?????: ' + new Date().toLocaleString('ru-RU'),
-            '???? ??? ???? ?? ??, ?????? ??????? ?????? ? ????????? ??? ??????.',
+            `Аккаунт: ${updatedUser.username}`,
+            `Время: ${new Date().toLocaleString('ru-RU')}`,
+            'Если это были не вы, срочно смените пароль и завершите все сессии.',
           ],
         });
       }
@@ -671,7 +818,7 @@ class UserController {
         },
       });
 
-      res.json({ message: '?????? ???????????? ?????????' });
+      res.json({ message: 'Данные пользователя обновлены' });
     } catch (error) {
       errorHandling(error);
       await securityAuditService.log({
@@ -684,7 +831,7 @@ class UserController {
         targetId: req.params?.id,
         details: { reason: error.message },
       });
-      return next(ApiError.badRequest(`?????? ??????????: ${error.message}`));
+      return next(ApiError.badRequest(`Ошибка обновления: ${error.message}`));
     }
   }
 
@@ -706,11 +853,11 @@ class UserController {
         ],
         include: [{ model: Role, attributes: ['name'], required: false }],
       });
-      validateCheck(!user, '???????????? ?? ??????');
+      validateCheck(!user, 'Пользователь не найден');
 
       const nextUsername = username?.trim() || user.username;
       const nextEmail = email?.trim() || user.email;
-      const hashPassword = password && (await generateHashPassword(password));
+      const hashPassword = password ? await generateHashPassword(password) : null;
       const passwordChanged = Boolean(hashPassword);
       const emailChanged = Boolean(email && nextEmail !== user.email);
       const shouldRotateToken =
@@ -737,7 +884,12 @@ class UserController {
         { where: { id } }
       );
 
-      validateCheck(!isUpdate[0], '???????????? ?? ??????');
+      validateCheck(!isUpdate[0], 'Пользователь не найден');
+
+      if (passwordChanged) {
+        await userSessionService.revokeAllForUser(id, req.user.sessionId);
+        await trustedDeviceService.revokeAllForUser(res, id);
+      }
 
       if (emailChanged) {
         await authCodeService.createEmailVerificationCode({
@@ -771,17 +923,17 @@ class UserController {
       if (passwordChanged) {
         await emailService.sendSecurityNotification({
           to: refreshedUser.email,
-          subject: '?????? ???????? ???????',
-          title: '? ????? ???????? ??????? ??????',
+          subject: 'Пароль аккаунта изменён',
+          title: 'В вашем аккаунте изменён пароль',
           lines: [
-            '???????: ' + refreshedUser.username,
-            '?????: ' + new Date().toLocaleString('ru-RU'),
-            '???? ??? ???? ?? ??, ?????? ??????? ?????? ? ????????? ??? ??????.',
+            `Аккаунт: ${refreshedUser.username}`,
+            `Время: ${new Date().toLocaleString('ru-RU')}`,
+            'Если это были не вы, срочно смените пароль и завершите все сессии.',
           ],
         });
       }
 
-      const token = this.issueAuthToken(refreshedUser);
+      const token = this.issueAuthToken(refreshedUser, req.user.sessionId);
 
       await securityAuditService.log({
         req,
@@ -800,9 +952,7 @@ class UserController {
       });
 
       res.json({
-        message: emailChanged
-          ? '??????? ????????. ??????????? ????? ????? ????? ?? ??????.'
-          : '?????? ???????????? ?????????',
+        message: emailChanged ? 'Профиль обновлён. Подтвердите новую почту кодом из письма.' : 'Данные пользователя обновлены',
         token,
       });
     } catch (error) {
@@ -817,10 +967,9 @@ class UserController {
         targetId: req.user?.id,
         details: { reason: error.message },
       });
-      return next(ApiError.badRequest(`?????? ??????????: ${error.message}`));
+      return next(ApiError.badRequest(`Ошибка обновления: ${error.message}`));
     }
   }
-
 }
 
 module.exports = new UserController();

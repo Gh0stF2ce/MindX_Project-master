@@ -11,12 +11,18 @@ import { mindxDebounce } from '@mindx/utils/tools';
 const SignIn = observer(() => {
   const { user } = useContext(Context);
   const navigate = useNavigate();
+  const [mode, setMode] = useState('signin');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [challengeToken, setChallengeToken] = useState('');
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [rememberDevice, setRememberDevice] = useState(false);
   const [emailHint, setEmailHint] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [resetRequested, setResetRequested] = useState(false);
 
   const completeAuth = (payload) => {
     user.setUser(payload.user);
@@ -43,11 +49,7 @@ const SignIn = observer(() => {
         completeAuth(data);
       }
     } catch (error) {
-      ErrorEmmiter(
-        error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          'Не удалось выполнить вход.'
-      );
+      ErrorEmmiter(error?.response?.data?.error || error?.response?.data?.message || 'Не удалось выполнить вход.');
     }
   });
 
@@ -56,20 +58,47 @@ const SignIn = observer(() => {
       const data = await API.user.VerifyTwoFactor(challengeToken, twoFactorCode, rememberDevice);
       completeAuth(data);
     } catch (error) {
-      ErrorEmmiter(
-        error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          'Не удалось подтвердить код.'
-      );
+      ErrorEmmiter(error?.response?.data?.error || error?.response?.data?.message || 'Не удалось подтвердить код.');
     }
   });
+
+  const requestReset = async () => {
+    try {
+      const data = await API.user.forgotPassword(resetEmail.trim());
+      setResetRequested(true);
+      SuccessEmmiter(data.message || 'Если такая почта существует, код отправлен.');
+    } catch (error) {
+      ErrorEmmiter(error?.response?.data?.error || 'Не удалось отправить код для сброса пароля.');
+    }
+  };
+
+  const resetPassword = async () => {
+    try {
+      const data = await API.user.resetPassword(
+        resetEmail.trim(),
+        resetCode.trim(),
+        newPassword,
+        confirmNewPassword
+      );
+      SuccessEmmiter(data.message || 'Пароль успешно изменён.');
+      setMode('signin');
+      setResetRequested(false);
+      setResetCode('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    } catch (error) {
+      ErrorEmmiter(error?.response?.data?.error || 'Не удалось сбросить пароль.');
+    }
+  };
 
   return (
     <main className="auth-section">
       <div className="signin-section">
-        <h1 className="auth-title">{challengeToken ? 'Подтверждение входа' : 'Вход'}</h1>
+        <h1 className="auth-title">
+          {challengeToken ? 'Подтверждение входа' : mode === 'reset' ? 'Восстановление пароля' : 'Вход'}
+        </h1>
         <form className="auth-form" onSubmit={(e) => e.preventDefault()}>
-          {!challengeToken ? (
+          {!challengeToken && mode === 'signin' && (
             <>
               <div>
                 <label htmlFor="identifier">Логин или email</label>
@@ -95,6 +124,9 @@ const SignIn = observer(() => {
                   maxLength={60}
                 />
               </div>
+              <button type="button" className="link-btn" onClick={() => setMode('reset')}>
+                Забыли пароль?
+              </button>
               <div className="btn-section">
                 <a className="btn sign" href={ROUTES.SIGNUP_ROUTE}>
                   Нет аккаунта?
@@ -104,9 +136,13 @@ const SignIn = observer(() => {
                 </button>
               </div>
             </>
-          ) : (
+          )}
+
+          {challengeToken && (
             <>
-              <p>Код отправлен на почту: <strong>{emailHint}</strong></p>
+              <p>
+                Код отправлен на почту: <strong>{emailHint}</strong>
+              </p>
               <div>
                 <label htmlFor="twoFactorCode">Код из письма</label>
                 <input
@@ -141,6 +177,81 @@ const SignIn = observer(() => {
                 <button className="btn auth" onClick={verifyCode}>
                   Подтвердить
                 </button>
+              </div>
+            </>
+          )}
+
+          {!challengeToken && mode === 'reset' && (
+            <>
+              <div>
+                <label htmlFor="resetEmail">Почта</label>
+                <input
+                  type="email"
+                  id="resetEmail"
+                  className="auth-input"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                />
+              </div>
+
+              {resetRequested && (
+                <>
+                  <div>
+                    <label htmlFor="resetCode">Код из письма</label>
+                    <input
+                      type="text"
+                      id="resetCode"
+                      className="auth-input"
+                      value={resetCode}
+                      onChange={(e) => setResetCode(e.target.value)}
+                      maxLength={6}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="newPassword">Новый пароль</label>
+                    <input
+                      type="password"
+                      id="newPassword"
+                      className="auth-input"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="confirmNewPassword">Повторите пароль</label>
+                    <input
+                      type="password"
+                      id="confirmNewPassword"
+                      className="auth-input"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="btn-section">
+                <button
+                  className="btn sign"
+                  onClick={() => {
+                    setMode('signin');
+                    setResetRequested(false);
+                    setResetCode('');
+                    setNewPassword('');
+                    setConfirmNewPassword('');
+                  }}
+                >
+                  Назад
+                </button>
+                {!resetRequested ? (
+                  <button className="btn auth" onClick={requestReset}>
+                    Получить код
+                  </button>
+                ) : (
+                  <button className="btn auth" onClick={resetPassword}>
+                    Сбросить пароль
+                  </button>
+                )}
               </div>
             </>
           )}

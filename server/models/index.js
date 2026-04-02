@@ -14,6 +14,7 @@ const InvadersData = require('./invadersData.js')
 const SecurityEvent = require('./securityEvent.js')
 const AuthCode = require('./authCode.js')
 const TrustedDevice = require('./trustedDevice.js')
+const UserSession = require('./userSession.js')
 
 
 Game.hasOne(CarouselData, { onDelete: 'CASCADE', foreignKey: { allowNull: false } })
@@ -39,6 +40,8 @@ User.hasMany(AuthCode, { onDelete: 'CASCADE', foreignKey: { allowNull: false } }
 AuthCode.belongsTo(User)
 User.hasMany(TrustedDevice, { onDelete: 'CASCADE', foreignKey: { allowNull: false } })
 TrustedDevice.belongsTo(User)
+User.hasMany(UserSession, { onDelete: 'CASCADE', foreignKey: { allowNull: false } })
+UserSession.belongsTo(User)
 
 Image.hasMany(Game, { foreignKey: { allowNull: true } })
 Game.belongsTo(Image)
@@ -62,5 +65,5 @@ UserAnswer.belongsTo(QuestionGame)
 module.exports = {
     User, Role, Game, AccessGame,
     UserAnswer, CarouselData, InvadersData,
-    Question, Theme, ThemeGame, QuestionGame, Image, Bonus, SecurityEvent, AuthCode, TrustedDevice
+    Question, Theme, ThemeGame, QuestionGame, Image, Bonus, SecurityEvent, AuthCode, TrustedDevice, UserSession
 }

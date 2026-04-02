@@ -25,6 +25,11 @@ const emailValidation = Joi.string().email({ tlds: { allow: false } }).messages(
   'string.email': 'Поле {#key} должно быть корректным email.',
 });
 
+const codeValidation = Joi.string().length(6).pattern(/^\d+$/).messages({
+  'string.length': 'Код должен содержать 6 цифр.',
+  'string.pattern.base': 'Код должен содержать только цифры.',
+});
+
 const sharedMessages = {
   'any.required': 'Поле {#key} обязательно для заполнения.',
   'string.empty': 'Поле {#key} не может быть пустым.',
@@ -43,8 +48,8 @@ const userPutSchema = Joi.object({
       otherwise: Joi.optional(),
     })
     .messages({
-      'any.only': '???? {#key} ?????? ????????? ? ???????.',
-      'any.required': '???? {#key} ???????????, ???? ????? ??????.',
+      'any.only': 'Поле {#key} должно совпадать с паролем.',
+      'any.required': 'Поле {#key} обязательно, если задан пароль.',
     }),
   isTwoFactorEnabled: Joi.boolean().optional(),
 }).messages(sharedMessages);
@@ -65,7 +70,7 @@ const signinSchema = Joi.object({
 
 const verifyEmailSchema = Joi.object({
   email: emailValidation.required(),
-  code: Joi.string().length(6).required(),
+  code: codeValidation.required(),
 }).messages(sharedMessages);
 
 const resendVerificationSchema = Joi.object({
@@ -74,8 +79,21 @@ const resendVerificationSchema = Joi.object({
 
 const verifyTwoFactorSchema = Joi.object({
   challengeToken: Joi.string().required(),
-  code: Joi.string().length(6).required(),
+  code: codeValidation.required(),
   rememberDevice: Joi.boolean().optional().default(false),
+}).messages(sharedMessages);
+
+const forgotPasswordSchema = Joi.object({
+  email: emailValidation.required(),
+}).messages(sharedMessages);
+
+const resetPasswordSchema = Joi.object({
+  email: emailValidation.required(),
+  code: codeValidation.required(),
+  password: passwordSchema.required(),
+  confirmPassword: Joi.required().valid(Joi.ref('password')).messages({
+    'any.only': 'Поле {#key} должно совпадать с паролем.',
+  }),
 }).messages(sharedMessages);
 
 const roleIdValidation = Joi.string().guid().default('aff50f23-2fbc-41be-ba07-c1c69c5e388c').messages({
@@ -88,10 +106,11 @@ const userPutSchemaForAdmin = Joi.object({
   roleId: roleIdValidation.required(),
   isTwoFactorEnabled: Joi.boolean().optional(),
   isEmailVerified: Joi.boolean().optional(),
-  password: passwordSchema.optional().allow(null),
+  password: passwordSchema.optional().allow(null, ''),
   confirmPassword: Joi.optional()
+    .allow(null, '')
     .when('password', {
-      is: Joi.exist(),
+      is: Joi.exist().not(null, ''),
       then: Joi.valid(Joi.ref('password')).required(),
       otherwise: Joi.optional(),
     })
@@ -120,6 +139,8 @@ module.exports = {
   verifyEmailSchema,
   resendVerificationSchema,
   verifyTwoFactorSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
   userPutSchemaForAdmin,
   userPostSchemaForAdmin,
 };

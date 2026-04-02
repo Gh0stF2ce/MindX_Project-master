@@ -39,6 +39,16 @@
     margin-left: 0;
   }
 
+  .link-btn {
+    align-self: flex-start;
+    border: 0;
+    background: transparent;
+    color: #a64f10;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
   .auth-title {
     font-size: clamp(18px, 3vw, 25px);
     font-weight: 700;

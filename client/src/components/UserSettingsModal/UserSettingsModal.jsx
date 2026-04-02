@@ -5,6 +5,8 @@ import { ErrorEmmiter, SuccessEmmiter } from '@mindx/components/UI/Toastify/Noti
 
 const UserSettingsModal = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [sessions, setSessions] = useState([]);
   const [form, setForm] = useState({
     username: '',
     email: '',
@@ -15,23 +17,35 @@ const UserSettingsModal = ({ isOpen, onClose }) => {
   });
   const [verificationCode, setVerificationCode] = useState('');
 
+  const loadSessions = async () => {
+    try {
+      setSessionsLoading(true);
+      const data = await API.user.getSessions();
+      setSessions(data);
+    } catch (error) {
+      ErrorEmmiter(error?.response?.data?.error || 'Не удалось загрузить список сессий.');
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) {
       return;
     }
 
     setLoading(true);
-    API.user
-      .getProfile()
-      .then((data) => {
+    Promise.all([API.user.getProfile(), API.user.getSessions()])
+      .then(([profile, sessionList]) => {
         setForm({
-          username: data.username || '',
-          email: data.email || '',
+          username: profile.username || '',
+          email: profile.email || '',
           password: '',
           confirmPassword: '',
-          isTwoFactorEnabled: Boolean(data.isTwoFactorEnabled),
-          isEmailVerified: Boolean(data.isEmailVerified),
+          isTwoFactorEnabled: Boolean(profile.isTwoFactorEnabled),
+          isEmailVerified: Boolean(profile.isEmailVerified),
         });
+        setSessions(sessionList);
       })
       .catch((error) => {
         ErrorEmmiter(error?.response?.data?.error || 'Не удалось загрузить настройки.');
@@ -62,26 +76,25 @@ const UserSettingsModal = ({ isOpen, onClose }) => {
         payload.confirmPassword = form.confirmPassword;
       }
 
-      const previousEmail = form.email.trim();
       const response = await API.user.updateProfile(payload);
       SuccessEmmiter(response.message || 'Настройки сохранены.');
 
       if (response.message?.includes('Подтвердите новую почту')) {
         setForm((prev) => ({
           ...prev,
-          email: previousEmail,
           isEmailVerified: false,
           password: '',
           confirmPassword: '',
         }));
-        return;
+      } else {
+        setForm((prev) => ({
+          ...prev,
+          password: '',
+          confirmPassword: '',
+        }));
       }
 
-      setForm((prev) => ({
-        ...prev,
-        password: '',
-        confirmPassword: '',
-      }));
+      await loadSessions();
     } catch (error) {
       ErrorEmmiter(error?.response?.data?.error || 'Не удалось сохранить настройки.');
     }
@@ -120,6 +133,31 @@ const UserSettingsModal = ({ isOpen, onClose }) => {
     }
   };
 
+  const logoutSession = async (sessionId, isCurrent) => {
+    try {
+      const response = await API.user.logoutSession(sessionId);
+      SuccessEmmiter(response.message || 'Сессия завершена.');
+
+      if (isCurrent) {
+        localStorage.removeItem('token');
+        window.location.reload();
+        return;
+      }
+
+      await loadSessions();
+    } catch (error) {
+      ErrorEmmiter(error?.response?.data?.error || 'Не удалось завершить сессию.');
+    }
+  };
+
+  const formatSessionTitle = (session) => {
+    if (!session.userAgent) {
+      return 'Неизвестное устройство';
+    }
+
+    return session.userAgent.length > 90 ? `${session.userAgent.slice(0, 90)}...` : session.userAgent;
+  };
+
   return (
     <div className="settings-overlay" onClick={onClose}>
       <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
@@ -145,11 +183,7 @@ const UserSettingsModal = ({ isOpen, onClose }) => {
 
             <label>
               Почта
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-              />
+              <input type="email" value={form.email} onChange={(e) => handleChange('email', e.target.value)} />
             </label>
 
             <label>
@@ -205,6 +239,49 @@ const UserSettingsModal = ({ isOpen, onClose }) => {
                 </div>
               </div>
             )}
+
+            <div className="session-box">
+              <div className="settings-actions settings-actions--between">
+                <h3>Активные устройства</h3>
+                <button type="button" className="secondary-btn" onClick={loadSessions}>
+                  Обновить
+                </button>
+              </div>
+
+              {sessionsLoading ? (
+                <p>Загрузка списка сессий...</p>
+              ) : sessions.length === 0 ? (
+                <p>Активных сессий пока нет.</p>
+              ) : (
+                <div className="session-list">
+                  {sessions.map((session) => (
+                    <div className="session-item" key={session.sessionId}>
+                      <div className="session-item__content">
+                        <strong>
+                          {formatSessionTitle(session)}
+                          {session.isCurrent ? ' (текущая)' : ''}
+                        </strong>
+                        <span>IP: {session.ipAddress || 'не определён'}</span>
+                        <span>
+                          Последняя активность:{' '}
+                          {session.lastUsedAt ? new Date(session.lastUsedAt).toLocaleString('ru-RU') : 'нет данных'}
+                        </span>
+                        <span>
+                          Истекает: {session.expiresAt ? new Date(session.expiresAt).toLocaleString('ru-RU') : 'нет данных'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="secondary-btn"
+                        onClick={() => logoutSession(session.sessionId, session.isCurrent)}
+                      >
+                        Завершить
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div className="settings-actions">
               <button type="button" className="secondary-btn" onClick={onClose}>
